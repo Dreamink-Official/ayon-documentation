@@ -10,29 +10,46 @@ its own set of publishing plugins.
 
 ## How to test AYON on Deadline
 
-### Versions
+### Bundles
 
-Since 3.14 job submitted from AYON is bound to AYON version used to submit it. So
-if you submit job with 3.14.8, Deadline will try to find that particular version and use it
-for rendering. This is handled by `AYON_VERSION` variable on job - you can delete it from
-there and then the version set in studio Settings will be used.
+AYON describes itself by two environment variables when publishing:
+- AYON_BUNDLE_NAME - name of used bundle where publish was started from
+- AYON_DEFAULT_SETTINGS_VARIANT - variant of setting, could be 'production'|'staging'|any name of bundle denotes development bundle.
 
-![Deadline Job Version](assets/deadline_job_version.png)
+Please make sure that used bundle names are actually still on the server. You could probably find old publishes on Deadline when
+if re-submitted would fail, as origin bundle would be already archived on the server.
 
-Deadline needs to bootstrap this version so it will try to look the closest compatible
-build. So to use version 3.14.8 on Deadline it is enough to have build 3.14.0 or similar - important
-are the first two version numbers - major and minor. If they match, the version
-is considered compatible.
+### Running DL in development
 
-### Testing
+Sometimes could be beneficial to use dev bundles to speed up development. This kind of bundle can point any of the addons to their
+respective folder with client code, without need to create addon package, deploy it to the server, restarting server etc.
 
-So to test various changes you don't need to build again an again AYON and putting
-it to directory where Deadline is looking for versions - this needs to be done only on
-minor version change. That build will then be used to bootstrap whatever is set on the
-job or in the studio Settings.
+Deadline could handle dev bundle with two aforementioned environment variables. If you, as a developer, would trigger publish and
+use dev bundle, its name would be propagated via AYON_DEFAULT_SETTINGS_VARIANT.
 
-So you can either use zip version if it suits you, or better set your sources directory
-so it will be find as a version - for example with symlink.
+See [Dev mode](dev_dev_mode.md#dev-bundle)
 
-That way you can only modify `AYON_VERSION` variable on job to point it to version
-you would like to test.
+### Known issues and limitations
+
+#### Deadline AYON plugins
+
+Even if multiple developers or artists could run different bundles from AYON server, there is still limiting factor of custom AYON Deadline plugins.
+
+These needs to be deployed in `DEADLINE_REPO/custom` folder and cannot be differentiated. These plugins handle mostly injection of 
+AYON environment variables, and it is expected, that they would be pretty stable.
+
+#### No Multiple AYON servers
+
+AYON server can select multiple target Deadline urls via Project Settings, eg. publishes from separate projects could be segregated into
+multiple Deadline servers.
+
+As AYONs Deadline plugin needs to:
+- query local AYON tray to get proper configured environment (`injection of environment variables`)
+- trigger publishing job (which will rename and put all rendered files into proper locations)
+
+For this Deadline plugin needs to know:
+- path to AYON Tray executable installed on worker node
+- API key to AYON
+
+This is currently possible only via Deadline plugin configuration `Tools > Configure Plugins > AYON`, eg. only single AYON server could be used.
+
